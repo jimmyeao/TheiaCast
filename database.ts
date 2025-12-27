@@ -40,16 +40,17 @@ export async function savePurchasedLicense(
   stripeSessionId: string,
   amountPaid: number,
   currency: string,
-  expiresAt: Date | null
+  expiresAt: Date | null,
+  stripeSubscriptionId: string | null = null
 ) {
   const result = await pool.query(
     `INSERT INTO "PurchasedLicenses" (
       "CustomerId", "LicenseKey", "Tier", "MaxDevices",
-      "StripePaymentIntentId", "StripeSessionId", "AmountPaid", "Currency",
+      "StripePaymentIntentId", "StripeSessionId", "StripeSubscriptionId", "AmountPaid", "Currency",
       "ExpiresAt", "PurchasedAt", "EmailSent"
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, false)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, false)
     RETURNING *`,
-    [customerId, licenseKey, tier, maxDevices, stripePaymentIntentId, stripeSessionId, amountPaid, currency, expiresAt]
+    [customerId, licenseKey, tier, maxDevices, stripePaymentIntentId, stripeSessionId, stripeSubscriptionId, amountPaid, currency, expiresAt]
   );
   return result.rows[0];
 }

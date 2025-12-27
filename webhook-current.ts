@@ -212,7 +212,10 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       installationKey  // Use installation key from current purchase
     );
 
-    // Save purchased license
+    // Extract subscription ID if this is a subscription purchase
+    const subscriptionId = session.subscription ? String(session.subscription) : null;
+
+    // Save purchased license with subscription ID
     const purchasedLicense = await savePurchasedLicense(
       customer.Id,
       license.licenseKey,
@@ -222,12 +225,16 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
       session.id,
       session.amount_total || 0,
       session.currency || 'gbp',  // Changed default to GBP
-      expiresAt
+      expiresAt,
+      subscriptionId  // Store subscription ID for tracking
     );
 
     console.log(`License generated and saved: ${license.licenseKey}`);
     console.log(`License is specific to customer's TheiaCast installation`);
     console.log(`Expires: ${expiresAt.toISOString()} (${billingCycle})`);
+    if (subscriptionId) {
+      console.log(`Subscription ID: ${subscriptionId}`);
+    }
 
     // Send license email
     try {
@@ -312,7 +319,8 @@ async function handleSubscriptionRenewal(invoice: Stripe.Invoice) {
       installationKey
     );
 
-    // Save renewed license
+    // Save renewed license with subscription ID
+    const subscriptionIdStr = subscriptionId ? String(subscriptionId) : null;
     await savePurchasedLicense(
       customer.Id,
       license.licenseKey,
@@ -322,11 +330,15 @@ async function handleSubscriptionRenewal(invoice: Stripe.Invoice) {
       invoice.id,
       invoice.amount_paid || 0,
       invoice.currency || 'gbp',
-      expiresAt
+      expiresAt,
+      subscriptionIdStr  // Store subscription ID for tracking renewals
     );
 
     console.log(`Subscription renewed for ${customerEmail}, new license: ${license.licenseKey}`);
     console.log(`New expiry: ${expiresAt.toISOString()}`);
+    if (subscriptionIdStr) {
+      console.log(`Subscription ID: ${subscriptionIdStr}`);
+    }
 
     // Send renewal email
     try {
