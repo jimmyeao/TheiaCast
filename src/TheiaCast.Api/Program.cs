@@ -830,13 +830,24 @@ app.MapPost("/license/activate", async ([FromBody] ActivateLicenseGlobalDto dto,
 
         logger.LogInformation($"License activation attempt with key: {dto.LicenseKey.Substring(0, Math.Min(10, dto.LicenseKey.Length))}...");
 
-        var parts = dto.LicenseKey.Split('-');
-        if (parts.Length < 4 || parts[0] != "LK")
+        // Parse license key format: LK-{version}-{encoded}-{signature}
+        // Note: encoded payload may contain hyphens (URL-safe base64)
+        if (!dto.LicenseKey.StartsWith("LK-"))
         {
-            return Results.BadRequest(new { error = "Invalid license key format" });
+            return Results.BadRequest(new { error = "Invalid license key format - must start with LK-" });
         }
 
-        var version = int.Parse(parts[1]);
+        var firstHyphen = dto.LicenseKey.IndexOf('-', 3); // After "LK-"
+        if (firstHyphen == -1)
+        {
+            return Results.BadRequest(new { error = "Invalid license key format - no version" });
+        }
+
+        var versionStr = dto.LicenseKey.Substring(3, firstHyphen - 3);
+        if (!int.TryParse(versionStr, out var version))
+        {
+            return Results.BadRequest(new { error = $"Invalid license version: {versionStr}" });
+        }
 
         // Try to decode V2 license (with embedded metadata)
         var payload = await svc.DecodeLicenseKeyAsync(dto.LicenseKey);
@@ -865,12 +876,24 @@ app.MapPost("/license/activate", async ([FromBody] ActivateLicenseGlobalDto dto,
         }
         else if (version == 1)
         {
-            // V1 license - parse from key format
+            // V1 license - parse from key format: LK-1-{tier}-{random}-{checksum}
+            // or LK-1-{tier1}-{tier2}-{random}-{checksum} (e.g., PRO-10)
             logger.LogInformation("V1 license detected - parsing from key format");
-            tier = parts[2];
-            if (parts.Length >= 6 && int.TryParse(parts[3], out _))
+
+            // Extract the part after "LK-1-"
+            var v1Data = dto.LicenseKey.Substring(firstHyphen + 1);
+            var v1Parts = v1Data.Split('-');
+
+            if (v1Parts.Length < 3)
             {
-                tier = $"{parts[2]}-{parts[3]}";
+                return Results.BadRequest(new { error = "Invalid V1 license format" });
+            }
+
+            // Check if it's a two-part tier (e.g., PRO-10)
+            tier = v1Parts[0];
+            if (v1Parts.Length >= 4 && int.TryParse(v1Parts[1], out _))
+            {
+                tier = $"{v1Parts[0]}-{v1Parts[1]}";
             }
 
             maxDevices = tier.ToUpper() switch

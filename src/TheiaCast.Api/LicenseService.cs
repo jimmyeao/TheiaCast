@@ -571,14 +571,29 @@ public class LicenseService : ILicenseService
     {
         try
         {
-            var parts = licenseKey.Split('-');
-            if (parts.Length < 4 || parts[0] != "LK")
+            // V2 format: LK-{version}-{encoded}-{signature}
+            // Note: encoded payload may contain hyphens (URL-safe base64), so we can't just Split('-')
+
+            if (!licenseKey.StartsWith("LK-"))
             {
-                _logger.LogWarning("Invalid license key format");
+                _logger.LogWarning("Invalid license key format - must start with LK-");
                 return null;
             }
 
-            var version = int.Parse(parts[1]);
+            // Extract version (second segment after first hyphen)
+            var firstHyphen = licenseKey.IndexOf('-', 3); // After "LK-"
+            if (firstHyphen == -1)
+            {
+                _logger.LogWarning("Invalid license key format - no version");
+                return null;
+            }
+
+            var versionStr = licenseKey.Substring(3, firstHyphen - 3);
+            if (!int.TryParse(versionStr, out var version))
+            {
+                _logger.LogWarning($"Invalid license version: {versionStr}");
+                return null;
+            }
 
             // V1 licenses don't have embedded metadata
             if (version == 1)
@@ -590,8 +605,17 @@ public class LicenseService : ILicenseService
             // V2 licenses with embedded metadata
             if (version == 2)
             {
-                var encoded = parts[2];
-                var signature = parts[3];
+                // Find the last hyphen (signature separator)
+                // Signature is always 8 characters at the end
+                var lastHyphen = licenseKey.LastIndexOf('-');
+                if (lastHyphen == -1 || lastHyphen == firstHyphen)
+                {
+                    _logger.LogWarning("Invalid V2 license format - no signature separator");
+                    return null;
+                }
+
+                var encoded = licenseKey.Substring(firstHyphen + 1, lastHyphen - firstHyphen - 1);
+                var signature = licenseKey.Substring(lastHyphen + 1);
 
                 // Verify signature
                 var hmacSecret = await GetInstallationKeyAsync();
@@ -653,6 +677,7 @@ public class LicensePayload
     public string? c { get; set; }    // Company name (optional)
     public string? e { get; set; }    // Expiry date (YYYY-MM-DD) or null for perpetual
     public string i { get; set; } = string.Empty;   // Issued date (YYYY-MM-DD)
+    public string? u { get; set; }    // Unique ID (optional, for webhook-generated licenses)
 
     public DateTime? GetExpiryDate()
     {
