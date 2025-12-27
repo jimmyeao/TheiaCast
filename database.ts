@@ -78,7 +78,7 @@ export async function saveWebhookEvent(stripeEventId: string, eventType: string,
 
 export async function validateLicense(licenseKey: string) {
   const result = await pool.query(
-    `SELECT pl.*, c."Email", c."CompanyName"
+    `SELECT pl.*, c."Email", c."Name" as "CompanyName"
      FROM "PurchasedLicenses" pl
      LEFT JOIN "Customers" c ON pl."CustomerId" = c."Id"
      WHERE pl."LicenseKey" = $1`,
