@@ -172,7 +172,7 @@ export default function Pricing() {
                   </li>
                 </ul>
 
-                <Link href={`/checkout?tier=PRO-10&billing=${billingCycle}`} className="block w-full text-center bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                <Link href="/checkout" className="block w-full text-center bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors">
                   Buy Now
                 </Link>
               </div>
@@ -215,7 +215,7 @@ export default function Pricing() {
                   </li>
                 </ul>
 
-                <Link href={`/checkout?tier=PRO-20&billing=${billingCycle}`} className="block w-full text-center bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-all">
+                <Link href="/checkout" className="block w-full text-center bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold py-3 rounded-lg hover:shadow-lg transition-all">
                   Buy Now
                 </Link>
               </div>
@@ -252,7 +252,7 @@ export default function Pricing() {
                   </li>
                 </ul>
 
-                <Link href={`/checkout?tier=PRO-50&billing=${billingCycle}`} className="block w-full text-center bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors">
+                <Link href="/checkout" className="block w-full text-center bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 rounded-lg transition-colors">
                   Buy Now
                 </Link>
               </div>
@@ -278,7 +278,7 @@ export default function Pricing() {
                       </span>
                       <span className="text-gray-500 dark:text-gray-400 ml-2">/{billingCycle === 'yearly' ? 'year' : 'month'}</span>
                     </div>
-                    <Link href={`/checkout?tier=PRO-100&billing=${billingCycle}`} className="inline-block bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold px-10 py-3 rounded-lg hover:shadow-lg transition-all">
+                    <Link href="/checkout" className="inline-block bg-gradient-to-r from-orange-600 to-orange-500 text-white font-semibold px-10 py-3 rounded-lg hover:shadow-lg transition-all">
                       Buy Now
                     </Link>
                   </div>

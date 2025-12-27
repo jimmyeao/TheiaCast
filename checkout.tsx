@@ -1,19 +1,85 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import Link from 'next/link';
 
 export default function Checkout() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [installationKey, setInstallationKey] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [tier, setTier] = useState('PRO-10');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('yearly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [keyError, setKeyError] = useState('');
+
+  // Read URL parameters and set defaults
+  useEffect(() => {
+    if (router.isReady) {
+      const { tier: urlTier, billing } = router.query;
+
+      if (urlTier && typeof urlTier === 'string') {
+        const validTiers = ['PRO-10', 'PRO-20', 'PRO-50', 'PRO-100'];
+        if (validTiers.includes(urlTier)) {
+          setTier(urlTier);
+        }
+      }
+
+      if (billing && typeof billing === 'string') {
+        if (billing === 'monthly' || billing === 'yearly') {
+          setBillingCycle(billing);
+        }
+      }
+    }
+  }, [router.isReady, router.query]);
+
+  // Pricing data
+  const pricingData = {
+    'PRO-10': { monthly: 19, yearly: 215 },
+    'PRO-20': { monthly: 40, yearly: 430 },
+    'PRO-50': { monthly: 100, yearly: 1075 },
+    'PRO-100': { monthly: 199, yearly: 2149 }
+  };
+
+  // Validate installation key format
+  const validateInstallationKey = (key: string): boolean => {
+    // Must be at least 32 characters
+    if (key.length < 32) {
+      setKeyError('Installation key must be at least 32 characters long');
+      return false;
+    }
+
+    // Must contain only valid base64 characters: A-Z, a-z, 0-9, +, /, =
+    const base64Regex = /^[A-Za-z0-9+/=]+$/;
+    if (!base64Regex.test(key)) {
+      setKeyError('Installation key contains invalid characters. Only letters, numbers, +, /, and = are allowed');
+      return false;
+    }
+
+    setKeyError('');
+    return true;
+  };
+
+  const handleInstallationKeyChange = (value: string) => {
+    setInstallationKey(value);
+    if (value.length > 0) {
+      validateInstallationKey(value);
+    } else {
+      setKeyError('');
+    }
+  };
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validate installation key before proceeding
+    if (!validateInstallationKey(installationKey)) {
+      setLoading(false);
+      return;
+    }
 
     try {
       // Create checkout session
@@ -25,6 +91,7 @@ export default function Checkout() {
           installationKey,
           companyName,
           tier,
+          billingCycle,
         }),
       });
 
@@ -67,13 +134,24 @@ export default function Checkout() {
                 type="text"
                 required
                 value={installationKey}
-                onChange={(e) => setInstallationKey(e.target.value)}
+                onChange={(e) => handleInstallationKeyChange(e.target.value)}
                 placeholder="Enter your installation key from TheiaCast"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white ${
+                  keyError
+                    ? 'border-red-500 dark:border-red-500'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                📌 Find this in your TheiaCast admin dashboard → License page → "Show Installation Key"
-              </p>
+              {keyError && (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+                  ⚠️ {keyError}
+                </p>
+              )}
+              {!keyError && (
+                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  📌 Find this in your TheiaCast admin dashboard → License page → "Show Installation Key"
+                </p>
+              )}
             </div>
 
             {/* Email Field */}
@@ -108,6 +186,48 @@ export default function Checkout() {
               />
             </div>
 
+            {/* Billing Cycle Selection */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                Billing Cycle *
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center flex-1 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-orange-500 dark:bg-gray-700 dark:border-gray-600"
+                  style={{ borderColor: billingCycle === 'monthly' ? '#ea580c' : undefined }}>
+                  <input
+                    type="radio"
+                    name="billingCycle"
+                    value="monthly"
+                    checked={billingCycle === 'monthly'}
+                    onChange={(e) => setBillingCycle(e.target.value as 'monthly' | 'yearly')}
+                    className="mr-3"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 dark:text-white">Monthly</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Pay as you go</div>
+                  </div>
+                </label>
+                <label className="flex items-center flex-1 p-4 border-2 rounded-lg cursor-pointer transition-all hover:border-orange-500 dark:bg-gray-700 dark:border-gray-600 relative"
+                  style={{ borderColor: billingCycle === 'yearly' ? '#ea580c' : undefined }}>
+                  <input
+                    type="radio"
+                    name="billingCycle"
+                    value="yearly"
+                    checked={billingCycle === 'yearly'}
+                    onChange={(e) => setBillingCycle(e.target.value as 'monthly' | 'yearly')}
+                    className="mr-3"
+                  />
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900 dark:text-white">Yearly</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Save 10%</div>
+                  </div>
+                  <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                    Best Value
+                  </span>
+                </label>
+              </div>
+            </div>
+
             {/* Tier Selection */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
@@ -118,13 +238,13 @@ export default function Checkout() {
                 onChange={(e) => setTier(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white"
               >
-                <option value="PRO-10">PRO-10 - 10 devices ($499/year)</option>
-                <option value="PRO-20">PRO-20 - 20 devices ($899/year)</option>
-                <option value="PRO-50">PRO-50 - 50 devices ($1,999/year)</option>
-                <option value="PRO-100">PRO-100 - 100 devices ($3,499/year)</option>
+                <option value="PRO-10">PRO-10 - 10 devices (£{pricingData['PRO-10'][billingCycle]}/{billingCycle === 'yearly' ? 'year' : 'month'})</option>
+                <option value="PRO-20">PRO-20 - 20 devices (£{pricingData['PRO-20'][billingCycle]}/{billingCycle === 'yearly' ? 'year' : 'month'})</option>
+                <option value="PRO-50">PRO-50 - 50 devices (£{pricingData['PRO-50'][billingCycle]}/{billingCycle === 'yearly' ? 'year' : 'month'})</option>
+                <option value="PRO-100">PRO-100 - 100 devices (£{pricingData['PRO-100'][billingCycle]}/{billingCycle === 'yearly' ? 'year' : 'month'})</option>
               </select>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Select the tier that matches your needs
+                £1.99 per screen per month • {billingCycle === 'yearly' ? '10% discount applied' : 'Switch to yearly to save 10%'}
               </p>
             </div>
 
