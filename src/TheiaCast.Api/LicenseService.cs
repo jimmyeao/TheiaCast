@@ -117,7 +117,37 @@ public class LicenseService : ILicenseService
 
         if (license == null)
         {
-            throw new InvalidOperationException("Invalid license key");
+            // Try to decode as V2 license (external purchase from webhook)
+            var payload = await DecodeLicenseKeyAsync(licenseKey);
+            if (payload != null)
+            {
+                // Valid V2 license - import it into database
+                _logger.LogInformation($"Importing external V2 license: {payload.t}, {payload.d} devices");
+
+                license = new License
+                {
+                    Key = licenseKey,
+                    KeyHash = keyHash,
+                    Tier = payload.t,
+                    MaxDevices = payload.d,
+                    CompanyName = payload.c,
+                    ExpiresAt = payload.GetExpiryDate(),
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    ActivatedAt = DateTime.UtcNow
+                };
+
+                _db.Licenses.Add(license);
+                await _db.SaveChangesAsync();
+
+                await _logService.AddLogAsync("Info",
+                    $"Imported external license: {payload.t} - {payload.d} devices",
+                    null, "LicenseService");
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid license key");
+            }
         }
 
         if (!license.IsActive)

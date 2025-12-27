@@ -6,5 +6,5 @@ changing the time on an item in a playlist is not picked up by a client until it
 raspberry pi clients are not loading backgrounds on homeassistant URLs; this does work on windows clients. (done)
 need a way of hiding the mouse pointer on windows and raspberry pi clients when browser is full screen (done)
 program.cs is becoming too big, it needs refactoring into separate classes. we should aim for better programming practices to ensure maintainability (done)
-ability to add users
-need to work out the best way to do licensing - up to 3 screens should be free forever, then we licences per screen/per month or per screen /per year or a bulk license pack covering multiples like 10, 20, 50, 100 screens per year. we would also need a license generator and a way of taking payments.
+ability to add users (done)
+need to work out the best way to do licensing - up to 3 screens should be free forever, then we licences per screen/per month or per screen /per year or a bulk license pack covering multiples like 10, 20, 50, 100 screens per year. we would also need a license generator and a way of taking payments. (partial)
