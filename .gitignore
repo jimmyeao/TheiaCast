@@ -80,12 +80,19 @@ PublishProfiles/
 # SENSITIVE INFORMATION
 # ============================================
 
+# Claude Code settings (contains command history with passwords!)
+.claude/
+
 # Environment variables
 .env
 .env.*
 !.env.example
 !.env.template
 nul
+
+# Azure deployment configuration (keep in separate private repo)
+azure-config/
+deployment-secrets/
 
 # License Generator (VENDOR USE ONLY - Keep in separate private repo)
 tools/LicenseGenerator/
