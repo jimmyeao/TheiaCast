@@ -94,6 +94,22 @@ nul
 azure-config/
 deployment-secrets/
 
+# Webhook and payment processing (VENDOR USE ONLY - Keep in separate private repo)
+webhook*.ts
+webhook*.js
+database.ts
+database.js
+email-service.ts
+email-service.js
+create-checkout-session.ts
+create-checkout-session.js
+dist/
+
+# Temporary scripts and fixes
+fix-*.js
+pricing*.js
+temp-*.js
+
 # License Generator (VENDOR USE ONLY - Keep in separate private repo)
 tools/LicenseGenerator/
 
