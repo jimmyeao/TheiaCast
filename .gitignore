@@ -234,3 +234,4 @@ temp/
 *.stackdump
 *.pem
 *.tar.gz
+SECURITY_ACTIONS_REQUIRED.md
