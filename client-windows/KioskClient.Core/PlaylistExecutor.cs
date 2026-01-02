@@ -468,13 +468,21 @@ public class PlaylistExecutor
             return;
         }
 
-        _logger.LogInformation("Resuming playlist - re-evaluating time window constraints");
+        _logger.LogInformation("Resuming playlist");
         _isPaused = false;
 
-        // IMPORTANT: Re-evaluate constraints after resume (e.g., after client restart)
-        // Don't just navigate to current item - it may no longer be valid for current time/day
-        // ExecuteNextItem() will find the next valid item based on time windows and days of week
-        ExecuteNextItem();
+        // Resume with remaining duration
+        if (_remainingDurationMs > 0)
+        {
+            _currentItemStartTime = DateTime.Now;
+            _rotationTimer = new Timer(_ => ExecuteNextItem(), null, _remainingDurationMs, Timeout.Infinite);
+            _logger.LogInformation("Resuming with {RemainingMs}ms remaining", _remainingDurationMs);
+        }
+        else
+        {
+            // No remaining duration, advance to next item
+            ExecuteNextItem();
+        }
 
         EmitStateUpdate();
     }
