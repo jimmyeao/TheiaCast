@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { usePlaylistStore } from '../store/playlistStore';
 import { useContentStore } from '../store/contentStore';
-import type { Playlist, CreatePlaylistItemDto } from '@theiacast/shared';
+import type { Playlist, CreatePlaylistItemDto, Tag } from '@theiacast/shared';
 import { PlaylistTagSelector } from '../components/PlaylistTagSelector';
+import { tagService } from '../services/tag.service';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import {
   DndContext,
   closestCenter,
@@ -137,6 +139,11 @@ export const PlaylistsPage = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [expandedPlaylist, setExpandedPlaylist] = useState<number | null>(null);
 
+  // Filtering state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+
   const [playlistFormData, setPlaylistFormData] = useState({
     name: '',
     description: '',
@@ -156,7 +163,41 @@ export const PlaylistsPage = () => {
   useEffect(() => {
     fetchPlaylists();
     fetchContent();
+    loadTags();
   }, [fetchPlaylists, fetchContent]);
+
+  const loadTags = async () => {
+    try {
+      const tags = await tagService.getAll();
+      setAllTags(tags);
+    } catch (error) {
+      console.error('Failed to load tags:', error);
+    }
+  };
+
+  const toggleTag = (tagId: number) => {
+    setSelectedTagIds(prev =>
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    );
+  };
+
+  // Filter playlists by search query and tags
+  const filteredPlaylists = useMemo(() => {
+    return playlists.filter(playlist => {
+      // Filter by search query (name or description)
+      const matchesSearch = searchQuery === '' ||
+        playlist.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (playlist.description && playlist.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      // Filter by tags
+      const matchesTags = selectedTagIds.length === 0 ||
+        (playlist.tags && selectedTagIds.every(tagId =>
+          playlist.tags!.some(tag => tag.id === tagId)
+        ));
+
+      return matchesSearch && matchesTags;
+    });
+  }, [playlists, searchQuery, selectedTagIds]);
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -359,6 +400,57 @@ export const PlaylistsPage = () => {
         </button>
       </div>
 
+      {/* Search and Filter Section */}
+      <div className="card mb-6">
+        <div className="space-y-4">
+          {/* Search Box */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search playlists by name or description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input pl-10 w-full"
+            />
+          </div>
+
+          {/* Tag Filters */}
+          {allTags.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Filter by Tags
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    onClick={() => toggleTag(tag.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      selectedTagIds.includes(tag.id)
+                        ? 'bg-brand-orange-500 text-white'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                    style={
+                      selectedTagIds.includes(tag.id) && tag.color
+                        ? { backgroundColor: tag.color, borderColor: tag.color }
+                        : {}
+                    }
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Results count */}
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {filteredPlaylists.length} of {playlists.length} playlist{playlists.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="text-center py-12">
           <p className="text-gray-600">Loading playlists...</p>
@@ -370,9 +462,16 @@ export const PlaylistsPage = () => {
             Create Your First Playlist
           </button>
         </div>
+      ) : filteredPlaylists.length === 0 ? (
+        <div className="card text-center py-12">
+          <p className="text-gray-600 mb-4">No playlists match your filters.</p>
+          <button onClick={() => { setSearchQuery(''); setSelectedTagIds([]); }} className="btn-secondary">
+            Clear Filters
+          </button>
+        </div>
       ) : (
-        <div className="space-y-4">
-          {playlists.map((playlist) => (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {filteredPlaylists.map((playlist) => (
             <div key={playlist.id} className="card hover:shadow-lg transition-shadow duration-200">
               <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-4">
                 <div className="flex-1 w-full sm:w-auto min-w-0">

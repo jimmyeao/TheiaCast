@@ -25,7 +25,10 @@ export const ContentPage = () => {
   
   // UI State
   const [activeTab, setActiveTab] = useState<ContentType>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('contentViewMode');
+    return (saved === 'grid' || saved === 'list') ? saved : 'grid';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
@@ -76,6 +79,11 @@ export const ContentPage = () => {
     fetchPlaylists();
     fetchStorageStats();
   }, [fetchContent, fetchPlaylists]);
+
+  // Persist view mode to localStorage
+  useEffect(() => {
+    localStorage.setItem('contentViewMode', viewMode);
+  }, [viewMode]);
 
   const fetchStorageStats = async () => {
     try {
