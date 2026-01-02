@@ -344,57 +344,7 @@ TheiaCast uses a **hybrid communication model** that leverages the strengths of 
 
 ---
 
-## Development History
 
-### ✅ Phase 1-5: Initial Node.js Implementation (COMPLETED & DEPRECATED)
-**Previous Architecture:** NestJS backend with Socket.IO and SQLite
-- All phases 1-5 completed with NestJS/TypeORM/Socket.IO stack
-- Successfully deployed and tested
-- **Status:** Deprecated and removed in favor of .NET implementation
-
-### ✅ Phase 6: .NET Migration & Refactor (COMPLETED)
-
-#### Backend - ASP.NET Core Migration
-- [x] Migrated from NestJS to ASP.NET Core 8.0 Minimal APIs
-- [x] Switched from SQLite/TypeORM to PostgreSQL/Entity Framework Core
-- [x] Implemented JWT authentication with Bearer tokens
-- [x] Created Entity models (Device, DeviceLog, Content, Playlist, PlaylistItem, DevicePlaylist, Screenshot)
-- [x] Built RESTful API endpoints for all resources
-- [x] Implemented native WebSocket support (replaced Socket.IO)
-- [x] Added real-time device status broadcasting to admin clients
-- [x] Implemented content push on device connection and playlist assignment
-- [x] Added health check endpoints (/health, /healthz)
-- [x] Integrated Serilog for structured logging
-- [x] Added Swagger/OpenAPI documentation
-- [x] Implemented CORS policies for frontend development
-- [x] Database migration system with EF Core
-- [x] Automatic schema updates on startup (Token column, auto-login fields, unique indexes, etc.)
-- [x] Multi-frame WebSocket message handling (critical fix for large messages)
-
-#### Frontend - WebSocket Migration & UI Enhancements
-- [x] Migrated from Socket.IO client to native WebSocket API
-- [x] Updated WebSocket event handling for new backend protocol
-- [x] Maintained real-time device status indicators
-- [x] Enhanced UI components and state management
-- [x] Updated API service layer for new endpoint structure
-- [x] Added LiveRemoteControl component with CDP screencast rendering
-- [x] Added VisualRemoteControl component for screenshot-based control
-- [x] Enhanced DevicesPage with flip card UI and live thumbnails
-
-#### Client - WebSocket & API Migration
-- [x] Migrated from Socket.IO to native WebSocket (ws library)
-- [x] Updated event protocol to match .NET backend expectations
-- [x] Implemented playlist executor (replaced schedule executor)
-- [x] Added content rotation with display duration support
-- [x] Maintained health monitoring and screenshot functionality
-- [x] Updated configuration for new API endpoints
-- [x] WebSocket authentication via token query parameter
-- [x] Automatic content updates when playlists are assigned/modified
-- [x] CDP screencast implementation for live streaming
-- [x] Remote control command handlers (click, type, key, scroll)
-- [x] Persistent Chromium profile for session retention
-
----
 
 ## Database Schema
 
