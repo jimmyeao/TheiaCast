@@ -26,34 +26,41 @@ A comprehensive web-based digital signage solution with centralized management, 
 
 ### Device Management Dashboard
 
-<img width="1201" height="900" alt="image" src="https://github.com/user-attachments/assets/0ae8aaf2-ffa2-47a1-a35a-d9151c699062" />
+<img width="1799" height="1233" alt="image" src="https://github.com/user-attachments/assets/63666fd9-8796-41e9-b021-63c16f7b1b6f" />
+
 
 
 *Centralized view of all connected displays with live status monitoring*
 
 ### Device Control Actions
-<img width="1201" height="899" alt="image" src="https://github.com/user-attachments/assets/7a2e20d7-d2ee-4238-8633-9343bc1bbcf7" />
+<img width="1788" height="741" alt="image" src="https://github.com/user-attachments/assets/b022b28b-73bd-4b7b-b9ff-6903df9671d3" />
+
 
 *Quick access to device actions: screenshots, remote control, configuration*
 
 ### Content Library Management
-<img width="1200" height="899" alt="image" src="https://github.com/user-attachments/assets/b9fc9a23-249e-4ec5-acaa-c040515828e9" />
+<img width="1781" height="918" alt="image" src="https://github.com/user-attachments/assets/b7b0f50a-9558-49a3-9fbe-b7676f1df3dd" />
+
 
 
 *Organize and manage your digital signage assets*
 
 ### Playlist Management
-<img width="1201" height="899" alt="image" src="https://github.com/user-attachments/assets/a709ab44-20b6-469d-a824-5e30ea6ee7d1" />
+<img width="1793" height="904" alt="image" src="https://github.com/user-attachments/assets/9bec3458-ec04-4a66-a671-6f8da46b64dd" />
+
 
 *Create and manage content playlists for different devices*
 
 ### Live Remote Control
-<img width="1201" height="900" alt="image" src="https://github.com/user-attachments/assets/c0c14cd0-c1b2-48e6-9a59-cb0bedc93788" />
+
+<img width="1290" height="677" alt="image" src="https://github.com/user-attachments/assets/1616dd7c-5707-46ad-be4c-a2e32a09acd0" />
+
 
 *Real-time remote control interface with smart home integration*
 
 ### Security & Settings
-<img width="1201" height="898" alt="image" src="https://github.com/user-attachments/assets/29e2d09f-255d-4465-9a5c-7063a134c064" />
+<img width="1779" height="1163" alt="image" src="https://github.com/user-attachments/assets/abca5465-f509-4a16-9214-51671596b54e" />
+
 
 *Two-factor authentication and administrative controls*
 
