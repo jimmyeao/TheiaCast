@@ -1,0 +1,16 @@
+[Unit]
+Description=PDS API
+After=network.target
+
+[Service]
+ExecStart=/opt/pds/api/PDS.Api --urls=http://0.0.0.0:5000
+WorkingDirectory=/opt/pds/api
+Restart=always
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=Jwt__Issuer=pds
+Environment=Jwt__Audience=pds-clients
+Environment=Jwt__Secret=REPLACE_ME
+User=pds
+
+[Install]
+WantedBy=multi-user.target

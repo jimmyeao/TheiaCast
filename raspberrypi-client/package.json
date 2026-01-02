@@ -1,0 +1,43 @@
+{
+  "name": "@theiacast/client",
+  "version": "1.0.12",
+  "description": "TheiaCast client for digital signage (Windows, Linux, Raspberry Pi)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "npx tsc --watch",
+    "deploy": "bash deploy.sh",
+    "deploy:win": "powershell -ExecutionPolicy Bypass -File deploy-windows.ps1",
+    "deploy:linux": "powershell -ExecutionPolicy Bypass -File deploy-linux.ps1",
+    "gen:types": "openapi-typescript http://localhost:5000/swagger/v1/swagger.json -o src/services/api-types.ts",
+    "build:service": "ts-node src/service-installer.ts",
+    "build:installer": "cd installer && build.bat"
+  },
+  "keywords": [
+    "theiacast",
+    "digital-signage",
+    "raspberry-pi",
+    "windows",
+    "intel-nuc",
+    "chromium",
+    "kiosk"
+  ],
+  "author": "",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@theiacast/shared": "^1.0.12",
+    "dotenv": "^16.4.7",
+    "puppeteer": "^24.15.0",
+    "systeminformation": "^5.23.22",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.18.1",
+    "openapi-typescript": "^7.5.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

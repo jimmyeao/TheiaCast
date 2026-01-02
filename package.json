@@ -1,0 +1,39 @@
+{
+  "name": "kiosk-digital-signage",
+  "version": "1.0.12",
+  "description": "Digital signage solution with central management of Raspberry Pi displays",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "raspberrypi-client",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File start-dev.ps1",
+    "dev:single": "powershell -ExecutionPolicy Bypass -File start-dev-single.ps1",
+    "frontend:dev": "npm run dev --workspace=frontend",
+    "frontend:build": "npm run build --workspace=frontend",
+    "client:dev": "npm run dev --workspace=raspberrypi-client",
+    "client:build": "npm run build --workspace=raspberrypi-client",
+    "install:all": "npm install",
+    "clean": "rm -rf node_modules frontend/node_modules raspberrypi-client/node_modules shared/node_modules"
+  },
+  "keywords": [
+    "digital-signage",
+    "raspberry-pi",
+    "kiosk",
+    "nestjs",
+    "react",
+    "websocket"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.14",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "qrcode.react": "^4.2.0",
+    "ws": "^8.18.3"
+  }
+}

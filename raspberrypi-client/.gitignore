@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.js
+*.js.map
+*.d.ts
+!src/**/*.ts
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Deployment
+deploy/
+
+# WiX Installer artifacts
+installer/nodejs/
+installer/*.wixobj
+installer/*.wixpdb
+installer/*.msi
+installer/ClientFiles.wxs
+installer/NodeModules.wxs
+installer/NodeJsRuntime.wxs
+installer/service/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,214 @@
+name: Release Linux Client
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-client:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] || [ "${{ github.event_name }}" == "workflow_call" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Update package.json versions
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          echo "Updating package.json files to version $VERSION"
+
+          # Update root package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+
+          # Update raspberrypi-client package.json and dependency reference
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" raspberrypi-client/package.json
+          sed -i "s/\"@theiacast\/shared\": \".*\"/\"@theiacast\/shared\": \"^$VERSION\"/" raspberrypi-client/package.json
+
+          # Update shared package.json
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" shared/package.json
+
+          # Update frontend package.json (in case it's used elsewhere)
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" frontend/package.json
+          sed -i "s/\"@theiacast\/shared\": \".*\"/\"@theiacast\/shared\": \"$VERSION\"/" frontend/package.json
+
+          echo "✅ Updated all package.json versions to $VERSION"
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Build shared package
+        run: npm run build --workspace=shared
+
+      - name: Build client
+        run: npm run build --workspace=raspberrypi-client
+
+      - name: Create package directory
+        run: |
+          mkdir -p package/theiacast-client
+          cd package/theiacast-client
+
+          # Copy built files
+          cp -r ../../raspberrypi-client/dist .
+
+          # Copy package files
+          cp ../../raspberrypi-client/package.json .
+
+          # Copy package-lock.json if it exists (workspace setups may not have individual lock files)
+          if [ -f ../../raspberrypi-client/package-lock.json ]; then
+            cp ../../raspberrypi-client/package-lock.json .
+          fi
+
+          # Bundle the shared package as a local dependency FIRST
+          mkdir -p node_modules/@theiacast
+          cp -r ../../shared node_modules/@theiacast/shared
+          # Remove dev files from bundled shared package
+          rm -rf node_modules/@theiacast/shared/node_modules
+          rm -rf node_modules/@theiacast/shared/src
+
+          # Install all dependencies (will use the bundled @theiacast/shared we just copied)
+          # Skip Chromium download - will be handled by install script based on architecture
+          echo "Installing production dependencies..."
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm install --production --no-optional
+
+          # Verify @theiacast/shared is present
+          if [ -d "node_modules/@theiacast/shared" ]; then
+            echo "✓ @theiacast/shared is bundled"
+          else
+            echo "✗ ERROR: @theiacast/shared not found!"
+            exit 1
+          fi
+
+          # Copy install scripts
+          mkdir -p scripts
+          cp ../../raspberrypi-client/scripts/*.sh scripts/
+          chmod +x scripts/*.sh
+
+          # Create README
+          cat > README.md << 'EOF'
+          # TheiaCast Client for Linux/Raspberry Pi
+
+          ## Installation
+
+          1. Extract this archive
+          2. Run the install script with sudo:
+             ```bash
+             sudo ./scripts/install.sh
+             ```
+          3. Follow the prompts to configure your device
+
+          ## Requirements
+
+          - Node.js 18+ (will be installed automatically if missing)
+          - Systemd (for service management)
+          - X11 display server (for kiosk mode)
+
+          ## Uninstallation
+
+          ```bash
+          sudo ./scripts/uninstall.sh
+          ```
+
+          ## Manual Configuration
+
+          Edit `/opt/theiacast-client/.env` to change settings, then restart:
+          ```bash
+          sudo systemctl restart theiacast-client
+          ```
+
+          ## Troubleshooting
+
+          View logs:
+          ```bash
+          sudo journalctl -u theiacast-client -f
+          ```
+
+          Check status:
+          ```bash
+          sudo systemctl status theiacast-client
+          ```
+          EOF
+
+      - name: Create tarball
+        run: |
+          cd package
+          # Create both versioned and latest tarballs
+          tar czf ../theiacast-client-linux-v${{ steps.version.outputs.VERSION }}.tar.gz theiacast-client
+          tar czf ../theiacast-client-linux.tar.gz theiacast-client
+
+      - name: Upload Release Asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-client-package
+          path: |
+            theiacast-client-linux-v${{ steps.version.outputs.VERSION }}.tar.gz
+            theiacast-client-linux.tar.gz
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: TheiaCast v${{ steps.version.outputs.VERSION }}
+          files: |
+            theiacast-client-linux-v${{ steps.version.outputs.VERSION }}.tar.gz
+            theiacast-client-linux.tar.gz
+          draft: false
+          prerelease: false
+          body: |
+            ## TheiaCast Linux/Raspberry Pi Client v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+            ```bash
+            # Download latest (recommended)
+            wget https://github.com/jimmyeao/TheiaCast/releases/latest/download/theiacast-client-linux.tar.gz
+            tar xzf theiacast-client-linux.tar.gz
+
+            # Or download specific version
+            wget https://github.com/jimmyeao/TheiaCast/releases/download/v${{ steps.version.outputs.VERSION }}/theiacast-client-linux-v${{ steps.version.outputs.VERSION }}.tar.gz
+            tar xzf theiacast-client-linux-v${{ steps.version.outputs.VERSION }}.tar.gz
+
+            # Install
+            cd theiacast-client
+            sudo ./scripts/install.sh
+            ```
+
+            ### Requirements
+            - Linux/Raspberry Pi OS
+            - Node.js 18+ (automatically installed if missing)
+            - Systemd for service management
+            - X11 display server for kiosk mode
+
+            ### What's Included
+            - Pre-built Node.js application
+            - Installation and uninstallation scripts
+            - Systemd service configuration
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

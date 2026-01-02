@@ -1,0 +1,248 @@
+# ============================================
+# DEPENDENCIES
+# ============================================
+node_modules/
+package-lock.json
+yarn.lock
+.npm/
+.yarn/
+.pnp.*
+
+# ============================================
+# .NET BUILD OUTPUTS
+# ============================================
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+dist/
+build/
+out/
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio cache/options
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# Build results
+*.dll
+*.exe
+*.pdb
+*.cache
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tsbuildinfo
+*.vsix
+*.vspscc
+*.vssscc
+*.builds
+*.pidb
+*.svclog
+*.scc
+
+# Publish profiles
+PublishProfiles/
+*.pubxml
+*.publishproj
+
+# ============================================
+# SENSITIVE INFORMATION
+# ============================================
+
+# Claude Code settings (contains command history with passwords!)
+.claude/
+
+# Internal business strategy and competitive analysis
+COMPETITIVE-ANALYSIS.md
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.template
+nul
+
+# Azure deployment configuration (keep in separate private repo)
+azure-config/
+deployment-secrets/
+deploy-azure*.ps1
+deploy-azure*.sh
+
+# Webhook and payment processing (VENDOR USE ONLY - Keep in separate private repo)
+webhook*.ts
+webhook*.js
+database.ts
+database.js
+email-service.ts
+email-service.js
+create-checkout-session.ts
+create-checkout-session.js
+dist/
+
+# Temporary scripts and fixes
+fix-*.js
+pricing*.js
+temp-*.js
+
+# License Generator (VENDOR USE ONLY - Keep in separate private repo)
+tools/LicenseGenerator/
+
+# Configuration files with secrets
+appsettings.json
+appsettings.*.json
+!appsettings.example.json
+*settings.*.json
+connectionstrings.json
+secrets.json
+config.json
+!config.example.json
+
+# Certificates and keys
+*.pfx
+*.p12
+*.key
+*.pem
+*.cer
+*.crt
+*.cert
+*.der
+
+# SSH keys (for remote server access - NEVER commit!)
+id_rsa*
+*.ppk
+ssh_config
+known_hosts
+
+# Credentials
+credentials.json
+token.json
+*.credentials
+secrets/
+
+# Database files
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+data/
+*.mdf
+*.ldf
+
+# ============================================
+# BROWSER PROFILES (May contain sessions/cookies)
+# ============================================
+browser-profile/
+*-browser-profile/
+.pds-browser-profile/
+**/browser-profile/
+**/ProgramData/TheiaCast/
+**/ProgramData/PDS/
+**/CommonApplicationData/TheiaCast/
+**/CommonApplicationData/PDS/
+
+# ============================================
+# LOGS
+# ============================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ============================================
+# IDE / EDITOR
+# ============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-workspace
+*.sublime-project
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.tmproj
+*.tmproject
+tmtags
+
+# ============================================
+# OS
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ============================================
+# USER UPLOADS / RUNTIME DATA
+# ============================================
+uploads/
+screenshots/
+videos/
+media/
+
+# ============================================
+# TESTING
+# ============================================
+coverage/
+.nyc_output/
+*.lcov
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ============================================
+# TEMPORARY FILES
+# ============================================
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+*.stackdump
+*.pem
+*.tar.gz
+SECURITY_ACTIONS_REQUIRED.md

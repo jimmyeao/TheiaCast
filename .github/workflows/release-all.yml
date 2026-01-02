@@ -1,0 +1,81 @@
+name: Release All Components
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      components:
+        description: 'Components to release (all, windows-client, linux-client)'
+        required: false
+        default: 'all'
+
+permissions:
+  contents: write
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    steps:
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+  release-windows-client:
+    needs: extract-version
+    if: |
+      github.event.inputs.components == 'all' ||
+      github.event.inputs.components == 'windows-client' ||
+      github.event_name == 'push'
+    uses: ./.github/workflows/release-windows-client.yml
+    with:
+      version: ${{ needs.extract-version.outputs.version }}
+
+  release-linux-client:
+    needs: extract-version
+    if: |
+      github.event.inputs.components == 'all' ||
+      github.event.inputs.components == 'linux-client' ||
+      github.event_name == 'push'
+    uses: ./.github/workflows/release-linux-client.yml
+    with:
+      version: ${{ needs.extract-version.outputs.version }}
+
+  create-release-summary:
+    needs: [extract-version, release-windows-client, release-linux-client]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Release Summary
+        run: |
+          echo "## TheiaCast Release v${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Client Installers:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Windows Client**: TheiaCast-Client-Windows-v${{ needs.extract-version.outputs.version }}-Setup.exe" >> $GITHUB_STEP_SUMMARY
+          echo "- **Linux/Raspberry Pi Client**: theiacast-client-linux-v${{ needs.extract-version.outputs.version }}.tar.gz" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Server Deployment:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Backend and Frontend are deployed via Docker. See:" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker images: \`ghcr.io/${{ github.repository_owner }}/theiacast-backend:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker images: \`ghcr.io/${{ github.repository_owner }}/theiacast-frontend:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker workflow: [docker-publish.yml](../.github/workflows/docker-publish.yml)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Installation Guides:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📖 See [INSTALLATION.md](../INSTALLATION.md) for detailed installation instructions" >> $GITHUB_STEP_SUMMARY

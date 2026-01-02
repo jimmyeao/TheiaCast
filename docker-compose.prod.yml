@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: theiacast-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: theiacast
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  backend:
+    image: ghcr.io/jimmyeao/theiacast-backend:latest
+    container_name: theiacast-backend
+    environment:
+      - ConnectionStrings__Default=Host=postgres;Port=5432;Database=theiacast;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - ASPNETCORE_ENVIRONMENT=Production
+      - Jwt__Secret=${JWT_SECRET}
+      - BASE_URL=http://localhost:8080
+    ports:
+      - "5001:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - theiacast_media:/app/wwwroot
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/jimmyeao/theiacast-frontend:latest
+    container_name: theiacast-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  theiacast_media:

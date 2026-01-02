@@ -1,0 +1,270 @@
+name: Release Windows Client
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+  workflow_call:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-client:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Extract version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -or "${{ github.event_name }}" -eq "workflow_call") {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = "${{ github.ref_name }}".TrimStart('v')
+          }
+          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+          echo "Version: $version"
+
+      - name: Update package.json versions
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          Write-Host "Updating package.json files to version $version"
+
+          # Update root package.json
+          (Get-Content package.json) -replace '"version": ".*"', "`"version`": `"$version`"" | Set-Content package.json
+
+          # Update raspberrypi-client package.json and dependency reference
+          (Get-Content raspberrypi-client/package.json) -replace '"version": ".*"', "`"version`": `"$version`"" | Set-Content raspberrypi-client/package.json
+          (Get-Content raspberrypi-client/package.json) -replace '"@theiacast/shared": ".*"', "`"@theiacast/shared`": `"^$version`"" | Set-Content raspberrypi-client/package.json
+
+          # Update shared package.json
+          (Get-Content shared/package.json) -replace '"version": ".*"', "`"version`": `"$version`"" | Set-Content shared/package.json
+
+          # Update frontend package.json
+          (Get-Content frontend/package.json) -replace '"version": ".*"', "`"version`": `"$version`"" | Set-Content frontend/package.json
+          (Get-Content frontend/package.json) -replace '"@theiacast/shared": ".*"', "`"@theiacast/shared`": `"$version`"" | Set-Content frontend/package.json
+
+          Write-Host "✅ Updated all package.json versions to $version"
+
+      - name: Build .NET Project
+        working-directory: client-windows
+        run: |
+          dotnet publish KioskClient.Service -c Release -o publish -r win-x64 --self-contained false
+
+      - name: Install Playwright browsers
+        working-directory: client-windows
+        shell: pwsh
+        run: |
+          # WORKAROUND: Install to temp location first to avoid hard link issues
+          # Playwright's hard link system creates 1-byte stubs on GitHub Actions
+          # Install to default location first (without PLAYWRIGHT_BROWSERS_PATH)
+          Write-Host "=== Installing browsers to default location ==="
+          pwsh publish/playwright.ps1 install chromium --with-deps
+          $installExitCode = $LASTEXITCODE
+          Write-Host "playwright.ps1 exit code: $installExitCode"
+          Write-Host ""
+
+          # Find where Playwright installed the browsers (usually %USERPROFILE%\AppData\Local\ms-playwright)
+          $defaultBrowserPath = "$env:LOCALAPPDATA\ms-playwright"
+          Write-Host "Default browser path: $defaultBrowserPath"
+
+          if (Test-Path $defaultBrowserPath) {
+            Write-Host "✅ Browsers found in default location"
+            Write-Host "Copying browsers to publish folder..."
+
+            # Copy chromium browser to publish folder
+            if (Test-Path "$defaultBrowserPath\chromium-*") {
+              Copy-Item "$defaultBrowserPath\chromium-*" -Destination "publish\" -Recurse -Force
+              Write-Host "✅ Copied chromium-* to publish folder"
+            }
+
+            # Copy other dependencies
+            if (Test-Path "$defaultBrowserPath\ffmpeg-*") {
+              Copy-Item "$defaultBrowserPath\ffmpeg-*" -Destination "publish\" -Recurse -Force
+              Write-Host "✅ Copied ffmpeg-* to publish folder"
+            }
+
+            if (Test-Path "$defaultBrowserPath\chromium_headless_shell-*") {
+              Copy-Item "$defaultBrowserPath\chromium_headless_shell-*" -Destination "publish\" -Recurse -Force
+              Write-Host "✅ Copied chromium_headless_shell-* to publish folder"
+            }
+          } else {
+            Write-Error "❌ Default browser path not found: $defaultBrowserPath"
+            exit 1
+          }
+          Write-Host ""
+
+          # Verify installation with detailed debugging
+          Write-Host "=== Checking for installed browsers ==="
+          Write-Host "Current directory: $PWD"
+          Write-Host ""
+
+          Write-Host "=== All directories in publish folder: ==="
+          Get-ChildItem "publish" -Directory | ForEach-Object {
+            Write-Host "  - $($_.Name)"
+          }
+          Write-Host ""
+
+          Write-Host "=== Searching for chrome.exe recursively: ==="
+          $chromeExes = Get-ChildItem "publish" -Recurse -Filter "chrome.exe" -ErrorAction SilentlyContinue
+          if ($chromeExes) {
+            $chromeExes | ForEach-Object { Write-Host "  Found: $($_.FullName)" }
+          } else {
+            Write-Host "  No chrome.exe files found"
+          }
+          Write-Host ""
+
+          # Check for chromium in various possible locations
+          $foundBrowser = $false
+
+          # Try pattern 1: chromium-*/chrome-win64/chrome.exe
+          if (Test-Path "publish/chromium-*/chrome-win64/chrome.exe") {
+            Write-Host "✅ Found chromium in publish/chromium-*/chrome-win64/"
+            $foundBrowser = $true
+          }
+
+          # Try pattern 2: chromium_headless_shell-*/chrome-win64/chrome.exe
+          if (Test-Path "publish/chromium_headless_shell-*/chrome-win64/chrome.exe") {
+            Write-Host "✅ Found chromium in publish/chromium_headless_shell-*/chrome-win64/"
+            $foundBrowser = $true
+          }
+
+          # Try pattern 3: Any folder ending with a number/version
+          $chromiumDirs = Get-ChildItem "publish" -Directory | Where-Object { $_.Name -match "chromium" }
+          if ($chromiumDirs) {
+            Write-Host "✅ Found chromium-related directories:"
+            $chromiumDirs | ForEach-Object {
+              Write-Host "  - $($_.Name)"
+              Write-Host "    Contents:"
+              Get-ChildItem $_.FullName | ForEach-Object { Write-Host "      - $($_.Name)" }
+            }
+          }
+
+          # Check what's inside chrome-win64 folder specifically
+          Write-Host ""
+          Write-Host "=== Contents of chrome-win64 folder: ==="
+          if (Test-Path "publish/chromium-1200/chrome-win64") {
+            Write-Host "chrome-win64 folder exists, listing contents:"
+            Get-ChildItem "publish/chromium-1200/chrome-win64" -Force | ForEach-Object {
+              Write-Host "  - $($_.Name) ($($_.Length) bytes)"
+            }
+            Write-Host ""
+            Write-Host "Checking specifically for chrome.exe:"
+            if (Test-Path "publish/chromium-1200/chrome-win64/chrome.exe") {
+              Write-Host "  ✅ chrome.exe EXISTS at publish/chromium-1200/chrome-win64/chrome.exe"
+              $foundBrowser = $true
+            } else {
+              Write-Host "  ❌ chrome.exe NOT FOUND at publish/chromium-1200/chrome-win64/chrome.exe"
+              Write-Host "  Searching for any .exe files in chrome-win64:"
+              Get-ChildItem "publish/chromium-1200/chrome-win64" -Filter "*.exe" -Force | ForEach-Object {
+                Write-Host "    - Found EXE: $($_.Name)"
+              }
+            }
+          } else {
+            Write-Host "chrome-win64 folder does NOT exist"
+          }
+          Write-Host ""
+
+          if (-not $foundBrowser) {
+            Write-Error "❌ Failed to install Chromium browser - chrome.exe not found in chrome-win64 folder"
+            exit 1
+          }
+
+      - name: Download Inno Setup
+        shell: pwsh
+        run: |
+          $InnoSetupUrl = "https://jrsoftware.org/download.php/is.exe"
+          Invoke-WebRequest -Uri $InnoSetupUrl -OutFile "$env:TEMP\innosetup.exe"
+          Start-Process -FilePath "$env:TEMP\innosetup.exe" -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP-" -Wait
+
+      - name: Build Installer
+        working-directory: client-windows
+        shell: pwsh
+        run: |
+          # Update version in Setup.iss
+          $setupContent = Get-Content Setup.iss -Raw
+          $setupContent = $setupContent -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"${{ steps.version.outputs.VERSION }}`""
+          Set-Content Setup.iss -Value $setupContent
+
+          # Compile with Inno Setup
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" Setup.iss
+
+      - name: Rename installer
+        working-directory: client-windows
+        shell: pwsh
+        run: |
+          $oldName = "TheiaCastKioskClient-Setup.exe"
+          $versionedName = "TheiaCast-Client-Windows-v${{ steps.version.outputs.VERSION }}-Setup.exe"
+          $latestName = "TheiaCast-Client-Windows-Setup.exe"
+
+          if (Test-Path $oldName) {
+            # Create versioned installer
+            Copy-Item $oldName $versionedName
+            Write-Host "Created versioned installer: $versionedName"
+
+            # Create latest installer
+            Rename-Item $oldName $latestName
+            Write-Host "Created latest installer: $latestName"
+          }
+
+      - name: Upload Release Asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-client-installer
+          path: |
+            client-windows/TheiaCast-Client-Windows-v${{ steps.version.outputs.VERSION }}-Setup.exe
+            client-windows/TheiaCast-Client-Windows-Setup.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
+          name: TheiaCast v${{ steps.version.outputs.VERSION }}
+          files: |
+            client-windows/TheiaCast-Client-Windows-v${{ steps.version.outputs.VERSION }}-Setup.exe
+            client-windows/TheiaCast-Client-Windows-Setup.exe
+          draft: false
+          prerelease: false
+          body: |
+            ## TheiaCast Windows Client v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+
+            **Download latest (recommended):**
+            ```powershell
+            # Download from https://github.com/jimmyeao/TheiaCast/releases/latest
+            # Then run:
+            .\TheiaCast-Client-Windows-Setup.exe
+            ```
+
+            **Or download specific version:**
+            `TheiaCast-Client-Windows-v${{ steps.version.outputs.VERSION }}-Setup.exe`
+
+            ### Requirements
+            - Windows 10 or later
+            - .NET 10 Runtime (automatically installed if missing)
+
+            ### What's Included
+            - Windows installer with auto-start via Task Scheduler
+            - Bundled Chromium browser for kiosk display
+            - Configuration wizard for server connection
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,17 @@
+{
+  "name": "@theiacast/shared",
+  "version": "1.0.12",
+  "description": "Shared TypeScript types for TheiaCast digital signage",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "npx tsc",
+    "watch": "npx tsc --watch"
+  },
+  "keywords": ["theiacast", "types", "shared", "digital-signage"],
+  "author": "",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
